@@ -54,21 +54,16 @@ const ContactUs: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [formValid, setFormValid] = useState<boolean>(false);
   const history = useHistory();
-
-  // const [uploadClicked, setUploadClicked] = useState<boolean>(false);
-  // const [uploadedFile, setUploadedFile] = useState("");
   const [URL, setUrl] = useState<string>("");
   const [success, setSuccess] = useState<boolean>(false);
   const [uploadInput, setUploadInput] = useState<any>([]);
 
   const handleFileSelected = (files: any) => {
-    debugger;
     setUploadInput(files);
     console.log(files);
   };
 
   const uploadImage = () => {
-    debugger;
     var file = uploadInput[0];
     console.log("file:");
     console.log(file);
@@ -95,7 +90,6 @@ const ContactUs: React.FC = () => {
         headersConfig
       )
       .then((response) => {
-        debugger;
         var returnedData = response.data;
         var signedRequest = returnedData.signedRequest;
         var url = returnedData.url;
@@ -112,6 +106,14 @@ const ContactUs: React.FC = () => {
             console.log("Response from s3");
             setSuccess(true);
             alert("upload successful");
+          })
+          .then(() => {
+            debugger;
+            setWishlistEnty({
+              ...wishlistEntry,
+              image_URL: url,
+            });
+            debugger;
           })
           .catch((error) => {
             throw error;
@@ -135,7 +137,7 @@ const ContactUs: React.FC = () => {
           make: wishlistEntry.make,
           model: wishlistEntry.model,
           description: wishlistEntry.description,
-          image_URL: "blah.com",
+          image_URL: wishlistEntry.image_URL,
         },
         {
           headers: {
