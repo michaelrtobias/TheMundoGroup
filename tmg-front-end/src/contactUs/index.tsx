@@ -57,10 +57,11 @@ const ContactUs: React.FC = () => {
   const [URL, setUrl] = useState<string>("");
   const [success, setSuccess] = useState<boolean>(false);
   const [uploadInput, setUploadInput] = useState<any>([]);
+  const [fileSelected, setFileSelected] = useState<boolean>(false);
 
   const handleFileSelected = (files: any) => {
     setUploadInput(files);
-    console.log(files);
+    setFileSelected(true);
   };
 
   const uploadImage = () => {
@@ -108,12 +109,10 @@ const ContactUs: React.FC = () => {
             alert("upload successful");
           })
           .then(() => {
-            debugger;
             setWishlistEnty({
               ...wishlistEntry,
               image_URL: url,
             });
-            debugger;
           })
           .catch((error) => {
             throw error;
@@ -166,6 +165,7 @@ const ContactUs: React.FC = () => {
     const isPhoneSet = !!wishlistEntry.phone;
     setFormValid(isEmailSet && isPhoneSet);
   }, [wishlistEntry]);
+
   return (
     <BorderWrapper>
       <FormWrapper>
@@ -323,7 +323,11 @@ const ContactUs: React.FC = () => {
                 </Form.Group>
               </Col>
               <Col md={{ span: 5, offset: 1 }}>
-                <Button variant="primary" onClick={(e) => uploadImage()}>
+                <Button
+                  variant="primary"
+                  disabled={!fileSelected || loading}
+                  onClick={(e) => uploadImage()}
+                >
                   Upload Image
                 </Button>
               </Col>
