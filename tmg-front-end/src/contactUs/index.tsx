@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
-import Row from "react-bootstrap/Row";
+// import Row from "react-bootstrap/Row";
 import Container from "react-bootstrap/Container";
 import styled from "styled-components";
+import axios from "axios";
+import { useHistory } from "react-router";
 
 const FormWrapper = styled.div`
   border-width: 1rem 1rem 0;
@@ -29,25 +31,145 @@ interface Entry {
   image_URL: string;
 }
 
+interface Image {
+  signedRequest: string;
+  url: string;
+}
+
+interface File {
+  lastModified: string;
+  lastModifiedDate: string;
+  webkitRelativePath: string;
+  name: string;
+  type: string;
+  size: string;
+}
+
+interface FileList {
+  files: object;
+}
+
 const ContactUs: React.FC = () => {
-  // const [first_name, setFirstName] = useState("brian");
-  // const [last_name, setLastName] = useState("");
-  // const [email, setEmail] = useState("");
-  // const [phone, setPhone] = useState("");
-  // const [type, setType] = useState("");
-  // const [make, setMake] = useState("");
-  // const [model, setModel] = useState("");
-  // const [description, setDescription] = useState("");
-  // const [image_URL, setImageURL] = useState("");
-
   const [wishlistEntry, setWishlistEnty] = useState<Partial<Entry>>({});
+  const [loading, setLoading] = useState<boolean>(false);
+  const [formValid, setFormValid] = useState<boolean>(false);
+  const history = useHistory();
 
+  // const [uploadClicked, setUploadClicked] = useState<boolean>(false);
+  // const [uploadedFile, setUploadedFile] = useState("");
+  const [URL, setUrl] = useState<string>("");
+  const [success, setSuccess] = useState<boolean>(false);
+  const [uploadInput, setUploadInput] = useState<any>([]);
+
+  const handleFileSelected = (files: any) => {
+    debugger;
+    setUploadInput(files);
+    console.log(files);
+  };
+
+  const uploadImage = () => {
+    debugger;
+    var file = uploadInput[0];
+    console.log("file:");
+    console.log(file);
+    var fileParts = uploadInput[0].name.split(".");
+    console.log("file parts: " + fileParts);
+    var fileName = fileParts[0];
+    console.log("filename: " + fileName);
+    var fileType = fileParts[1];
+    console.log("file type: " + fileType);
+
+    let headersConfig = {
+      headers: {
+        "Content-Type": file.type,
+      },
+    };
+    console.log("Preparing the upload");
+    axios
+      .post(
+        "https://omv9j6woq7.execute-api.us-east-1.amazonaws.com/dev/wishlist/images",
+        {
+          fileName: file.name,
+          fileType: file.type,
+        },
+        headersConfig
+      )
+      .then((response) => {
+        debugger;
+        var returnedData = response.data;
+        var signedRequest = returnedData.signedRequest;
+        var url = returnedData.url;
+        setUrl(url);
+        console.log("Recieved a signed request " + signedRequest);
+        var options = {
+          headers: {
+            "Content-Type": file.type,
+          },
+        };
+        axios
+          .put(signedRequest, file, options)
+          .then((result) => {
+            console.log("Response from s3");
+            setSuccess(true);
+            alert("upload successful");
+          })
+          .catch((error) => {
+            throw error;
+          });
+      })
+      .catch((err) => {
+        throw err;
+      });
+  };
+  const addWishlistEntry = () => {
+    setLoading(true);
+    axios
+      .post(
+        "https://omv9j6woq7.execute-api.us-east-1.amazonaws.com/dev/wishlist",
+        {
+          first_name: wishlistEntry.first_name,
+          last_name: wishlistEntry.last_name,
+          email: wishlistEntry.email,
+          phone: wishlistEntry.phone,
+          type: wishlistEntry.type,
+          make: wishlistEntry.make,
+          model: wishlistEntry.model,
+          description: wishlistEntry.description,
+          image_URL: "blah.com",
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
+      .then((res) => {
+        console.log(res);
+        setLoading(false);
+        history.push("/");
+      })
+      .catch((e) => {
+        console.log(e);
+        //setError(true)
+        setLoading(false);
+      });
+  };
+
+  // const uploadImage = () => {
+
+  // }
+
+  useEffect(() => {
+    const isEmailSet = !!wishlistEntry.email;
+    const isPhoneSet = !!wishlistEntry.phone;
+    setFormValid(isEmailSet && isPhoneSet);
+  }, [wishlistEntry]);
   return (
     <BorderWrapper>
       <FormWrapper>
         <h2>Wishlist</h2>
         <p>Please fill out the form below to help us find your next piece</p>
-        <Form>
+        <Form onSubmit={() => addWishlistEntry()}>
           <Form.Row>
             <Form.Group as={Col} controlId="formFirstName">
               <Form.Label>First Name</Form.Label>
@@ -189,6 +311,9 @@ const ContactUs: React.FC = () => {
                   <Form.File
                     id="productFormImageUplaod"
                     label="Upload an image of product"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      handleFileSelected(e.target.files);
+                    }}
                   ></Form.File>
                   <Form.Control.Feedback type="valid">
                     You did it!
@@ -196,13 +321,18 @@ const ContactUs: React.FC = () => {
                 </Form.Group>
               </Col>
               <Col md={{ span: 5, offset: 1 }}>
-                <Button variant="primary" type="submit">
+                <Button variant="primary" onClick={(e) => uploadImage()}>
                   Upload Image
                 </Button>
               </Col>
             </Form.Row>
           </Container>
-          <Button variant="primary" type="submit">
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={!formValid || loading}
+            onClick={() => addWishlistEntry()}
+          >
             Submit
           </Button>
         </Form>
