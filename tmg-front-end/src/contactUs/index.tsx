@@ -3,10 +3,10 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Col from "react-bootstrap/Col";
 // import Row from "react-bootstrap/Row";
-import Container from "react-bootstrap/Container";
 import styled from "styled-components";
 import axios from "axios";
 import { useHistory } from "react-router";
+import UploadImage from "../uploadImage/index";
 
 const FormWrapper = styled.div`
   border-width: 1rem 1rem 0;
@@ -19,16 +19,16 @@ const BorderWrapper = styled.div`
   padding: 10px;
 `;
 
-interface Entry {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  type: string;
-  make: string;
-  model: string;
-  description: string;
-  image_URL: string;
+export interface Entry {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  type?: string;
+  make?: string;
+  model?: string;
+  description?: string;
+  image_URL?: string;
 }
 
 interface Image {
@@ -45,83 +45,12 @@ interface File {
   size: string;
 }
 
-interface FileList {
-  files: object;
-}
-
 const ContactUs: React.FC = () => {
   const [wishlistEntry, setWishlistEnty] = useState<Partial<Entry>>({});
   const [loading, setLoading] = useState<boolean>(false);
   const [formValid, setFormValid] = useState<boolean>(false);
   const history = useHistory();
-  const [URL, setUrl] = useState<string>("");
-  const [success, setSuccess] = useState<boolean>(false);
-  const [uploadInput, setUploadInput] = useState<any>([]);
-  const [fileSelected, setFileSelected] = useState<boolean>(false);
 
-  const handleFileSelected = (files: any) => {
-    setUploadInput(files);
-    setFileSelected(true);
-  };
-
-  const uploadImage = () => {
-    var file = uploadInput[0];
-    console.log("file:");
-    console.log(file);
-    var fileParts = uploadInput[0].name.split(".");
-    console.log("file parts: " + fileParts);
-    var fileName = fileParts[0];
-    console.log("filename: " + fileName);
-    var fileType = fileParts[1];
-    console.log("file type: " + fileType);
-
-    let headersConfig = {
-      headers: {
-        "Content-Type": file.type,
-      },
-    };
-    console.log("Preparing the upload");
-    axios
-      .post(
-        "https://omv9j6woq7.execute-api.us-east-1.amazonaws.com/dev/wishlist/images",
-        {
-          fileName: file.name,
-          fileType: file.type,
-        },
-        headersConfig
-      )
-      .then((response) => {
-        var returnedData = response.data;
-        var signedRequest = returnedData.signedRequest;
-        var url = returnedData.url;
-        setUrl(url);
-        console.log("Recieved a signed request " + signedRequest);
-        var options = {
-          headers: {
-            "Content-Type": file.type,
-          },
-        };
-        axios
-          .put(signedRequest, file, options)
-          .then((result) => {
-            console.log("Response from s3");
-            setSuccess(true);
-            alert("upload successful");
-          })
-          .then(() => {
-            setWishlistEnty({
-              ...wishlistEntry,
-              image_URL: url,
-            });
-          })
-          .catch((error) => {
-            throw error;
-          });
-      })
-      .catch((err) => {
-        throw err;
-      });
-  };
   const addWishlistEntry = () => {
     setLoading(true);
     axios
@@ -155,10 +84,6 @@ const ContactUs: React.FC = () => {
         setLoading(false);
       });
   };
-
-  // const uploadImage = () => {
-
-  // }
 
   useEffect(() => {
     const isEmailSet = !!wishlistEntry.email;
@@ -306,33 +231,12 @@ const ContactUs: React.FC = () => {
             </Form.Group>
           </Form.Row>
           <Form.Row></Form.Row>
-          <Container>
-            <Form.Row>
-              <Col md={4}>
-                <Form.Group as={Col} controlId="formMake">
-                  <Form.File
-                    id="productFormImageUplaod"
-                    label="Upload an image of product"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      handleFileSelected(e.target.files);
-                    }}
-                  ></Form.File>
-                  <Form.Control.Feedback type="valid">
-                    You did it!
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
-              <Col md={{ span: 5, offset: 1 }}>
-                <Button
-                  variant="primary"
-                  disabled={!fileSelected || loading}
-                  onClick={(e) => uploadImage()}
-                >
-                  Upload Image
-                </Button>
-              </Col>
-            </Form.Row>
-          </Container>
+
+          <UploadImage
+            setWishlistEnty={setWishlistEnty}
+            {...wishlistEntry}
+            loading={loading}
+          />
           <Button
             variant="primary"
             type="submit"
